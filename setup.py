@@ -44,7 +44,7 @@ later (LGPLv2+)",
             "xml/schemas/*xsd",
         ]
     },
-    url="https://github.com/danimaribeiro/PyTrustNFe",
+    url="https://github.com/theusFalconde/banana",
     license="LGPL-v2.1+",
     description="PyTrustNFe é uma biblioteca para envio de NF-e",
     long_description=open("README.md", "r").read(),
