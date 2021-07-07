@@ -16,7 +16,7 @@
         <nProt>{{ evento.nProt }}</nProt>
         <xJust>{{ evento.xJust|normalize|escape }}</xJust>
         <xCorrecao>{{ evento.xCorrecao|normalize|escape }}</xCorrecao>
-        <xCondUso>{{ evento.xCondUso }}</xCondUso>
+        <xCondUso>{{ evento.xCondUso|normalize|escape }}</xCondUso>
         <cOrgaoAutor>{{ evento.cOrgaoAutor }}</cOrgaoAutor>
         <tpAutor>{{ evento.tpAutor }}</tpAutor>
         <verAplic>{{ evento.verAplic }}</verAplic>
