@@ -189,6 +189,7 @@ def _send(certificado, method, **kwargs):
     base_url = None
     tp_evento = None
     if 'tp_evento' in kwargs.keys() and kwargs['tp_evento'] in ('110130', '110131'):
+        tp_evento = kwargs['tp_evento']
         base_url = 'https://www.nfe.fazenda.gov.br/NFeRecepcaoEvento4/NFeRecepcaoEvento4.asmx?wsdl'
     else:
         base_url = localizar_url(
