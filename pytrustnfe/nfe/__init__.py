@@ -15,7 +15,7 @@ from pytrustnfe.certificado import extract_cert_and_key_from_pfx, save_cert_key
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 # Zeep
 from requests import Session
-from zeep import Client
+from zeep import Client, xsd
 from zeep.transports import Transport
 
 
@@ -215,7 +215,19 @@ def _send_zeep(first_operation, client, xml_send, tp_evento=None, cUf=None):
     requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
     with client.settings(raw_response=True):
         if tp_evento is not None and tp_evento in ('110130', '110131'):
-            response = client.service[first_operation](xml, _soapheaders={'cUF': cUf, 'versaoDados': '1.00'})
+            header = xsd.Element(
+                '{http://www.portalfiscal.inf.br/nfe/wsdl/NFeRecepcaoEvento4}nfeCabecMsg',
+                xsd.ComplexType([
+                    xsd.Element(
+                        '{http://www.portalfiscal.inf.br/nfe/wsdl/NFeRecepcaoEvento4}cUF',
+                        xsd.String()),
+                    xsd.Element(
+                        '{http://www.portalfiscal.inf.br/nfe/wsdl/NFeRecepcaoEvento4}versaoDados',
+                        xsd.String()),
+                ])
+            )
+            header_value = header(cUF=cUf, versaoDados='1.00')
+            response = client.service[first_operation](xml, _soapheaders=[header_value])
         else:
             response = client.service[first_operation](xml)
         response, obj = sanitize_response(response.text)
