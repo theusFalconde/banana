@@ -15,7 +15,7 @@ from pytrustnfe.certificado import extract_cert_and_key_from_pfx, save_cert_key
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 # Zeep
 from requests import Session
-from zeep import Client, xsd
+from zeep import Client
 from zeep.transports import Transport
 
 
@@ -187,9 +187,7 @@ def _get_client(base_url, transport):
 def _send(certificado, method, **kwargs):
     xml_send = kwargs["xml"]
     base_url = None
-    tp_evento = None
     if 'tp_evento' in kwargs.keys() and kwargs['tp_evento'] in ('110130', '110131'):
-        tp_evento = kwargs['tp_evento']
         base_url = 'https://www.nfe.fazenda.gov.br/NFeRecepcaoEvento4/NFeRecepcaoEvento4.asmx?wsdl'
     else:
         base_url = localizar_url(
@@ -201,10 +199,10 @@ def _send(certificado, method, **kwargs):
         return patch(session, xml_send, kwargs["ambiente"])
     transport = Transport(session=session)
     first_op, client = _get_client(base_url, transport)
-    return _send_zeep(first_op, client, xml_send, tp_evento=tp_evento, cUf=kwargs["estado"])
+    return _send_zeep(first_op, client, xml_send)
 
 
-def _send_zeep(first_operation, client, xml_send, tp_evento=None, cUf=None):
+def _send_zeep(first_operation, client, xml_send):
     parser = etree.XMLParser(strip_cdata=False)
     xml = etree.fromstring(xml_send, parser=parser)
 
@@ -214,22 +212,7 @@ def _send_zeep(first_operation, client, xml_send, tp_evento=None, cUf=None):
 
     requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
     with client.settings(raw_response=True):
-        if tp_evento is not None and tp_evento in ('110130', '110131'):
-            header = xsd.Element(
-                '{http://www.portalfiscal.inf.br/nfe/wsdl/NFeRecepcaoEvento4}nfeCabecMsg',
-                xsd.ComplexType([
-                    xsd.Element(
-                        '{http://www.portalfiscal.inf.br/nfe/wsdl/NFeRecepcaoEvento4}cUF',
-                        xsd.String()),
-                    xsd.Element(
-                        '{http://www.portalfiscal.inf.br/nfe/wsdl/NFeRecepcaoEvento4}versaoDados',
-                        xsd.String()),
-                ])
-            )
-            header_value = header(cUF=cUf, versaoDados='1.00')
-            response = client.service[first_operation](xml, _soapheaders=[header_value])
-        else:
-            response = client.service[first_operation](xml)
+        response = client.service[first_operation](xml)
         response, obj = sanitize_response(response.text)
         return {
             "sent_xml": xml_send,
