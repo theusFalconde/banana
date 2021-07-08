@@ -186,9 +186,13 @@ def _get_client(base_url, transport):
 
 def _send(certificado, method, **kwargs):
     xml_send = kwargs["xml"]
-    base_url = localizar_url(
-        method, kwargs["estado"], kwargs["modelo"], kwargs["ambiente"]
-    )
+    base_url = None
+    if 'tpEvento' in kwargs.keys() and kwargs['tpEvento'] in ('110130', '110131'):
+        base_url = 'https://www.nfe.fazenda.gov.br/NFeRecepcaoEvento4/NFeRecepcaoEvento4.asmx'
+    else:
+        base_url = localizar_url(
+            method, kwargs["estado"], kwargs["modelo"], kwargs["ambiente"]
+        )
     session = _get_session(certificado)
     patch = has_patch(kwargs["estado"], method)
     if patch:
