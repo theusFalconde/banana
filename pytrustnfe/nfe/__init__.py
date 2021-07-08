@@ -187,6 +187,7 @@ def _get_client(base_url, transport):
 def _send(certificado, method, **kwargs):
     xml_send = kwargs["xml"]
     base_url = None
+    tp_evento = None
     if 'tp_evento' in kwargs.keys() and kwargs['tp_evento'] in ('110130', '110131'):
         base_url = 'https://www.nfe.fazenda.gov.br/NFeRecepcaoEvento4/NFeRecepcaoEvento4.asmx?wsdl'
     else:
@@ -199,10 +200,10 @@ def _send(certificado, method, **kwargs):
         return patch(session, xml_send, kwargs["ambiente"])
     transport = Transport(session=session)
     first_op, client = _get_client(base_url, transport)
-    return _send_zeep(first_op, client, xml_send)
+    return _send_zeep(first_op, client, xml_send, tp_evento=tp_evento, cUf=kwargs["estado"])
 
 
-def _send_zeep(first_operation, client, xml_send):
+def _send_zeep(first_operation, client, xml_send, tp_evento=None, cUf=None):
     parser = etree.XMLParser(strip_cdata=False)
     xml = etree.fromstring(xml_send, parser=parser)
 
@@ -212,7 +213,10 @@ def _send_zeep(first_operation, client, xml_send):
 
     requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
     with client.settings(raw_response=True):
-        response = client.service[first_operation](xml)
+        if tp_evento is not None and tp_evento in ('110130', '110131'):
+            response = client.service[first_operation](xml, _soapheaders={'cUF': cUf, 'versaoDados': '1.00'})
+        else:
+            response = client.service[first_operation](xml)
         response, obj = sanitize_response(response.text)
         return {
             "sent_xml": xml_send,
