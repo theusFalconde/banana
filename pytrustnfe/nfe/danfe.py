@@ -600,7 +600,7 @@ class danfe(object):
         nCol = 0
         nAju = 0
 
-        line_iter = iter(oXML[1:10])  # Salta elemt 1 e considera os próximos 9
+        line_iter = iter(oXML[1:121])  # Salta elemt 1 e considera os próximos 9
         for oXML_dup in line_iter:
 
             cDt, cHr = getdateByTimezone(
