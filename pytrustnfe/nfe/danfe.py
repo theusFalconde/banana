@@ -27,7 +27,7 @@ from datetime import datetime, timedelta
 
 def chunks(cString, nLen):
     for start in range(0, len(cString), nLen):
-        yield cString[start : start + nLen]
+        yield cString[start: start + nLen]
 
 
 def format_cnpj_cpf(value):
@@ -60,7 +60,6 @@ def getdateByTimezone(cDateUTC, timezone=None):
 
     # Verificamos se a string está completa (data + hora + timezone)
     if timezone and len(cDateUTC) == 25:
-
         # tz irá conter informações da timezone contida em cDateUTC
         tz = cDateUTC[19:25]
         tz = int(tz.split(":")[0])
@@ -115,14 +114,14 @@ def get_image(path, width=1 * cm):
 
 class danfe(object):
     def __init__(
-        self,
-        sizepage=A4,
-        list_xml=None,
-        recibo=True,
-        orientation="portrait",
-        logo=None,
-        cce_xml=None,
-        timezone=None,
+            self,
+            sizepage=A4,
+            list_xml=None,
+            recibo=True,
+            orientation="portrait",
+            logo=None,
+            cce_xml=None,
+            timezone=None,
     ):
 
         tamanho_ocupado = 0
@@ -199,13 +198,25 @@ class danfe(object):
             self.ide_emit(oXML=oXML, timezone=timezone)
             self.destinatario(oXML=oXML, timezone=timezone)
             tamanho_ocupado += self.entrega_retirada(
-                    oXML=oXML, timezone=timezone)
+                oXML=oXML, timezone=timezone)
 
+            qtd_blocos = 0
             if oXML_cobr is not None:
-                self.faturas(oXML=oXML_cobr, timezone=timezone)
+                qtd_blocos = self.faturas(oXML=oXML_cobr, timezone=timezone)
 
             self.impostos(oXML=oXML)
+
+            if qtd_blocos == 10:
+                self.newpage()
+                self.ide_emit(oXML=oXML, timezone=timezone)
+                self.nlin += 1
+
             self.transportes(oXML=oXML)
+
+            if qtd_blocos == 9:
+                self.newpage()
+                self.ide_emit(oXML=oXML, timezone=timezone)
+                self.nlin += 1
 
             index = self.produtos(
                 oXML=oXML,
@@ -216,6 +227,11 @@ class danfe(object):
             )
 
             tamanho_ocupado += self.calculo_issqn(oXML=oXML)
+
+            if qtd_blocos in (2, 3):
+                self.newpage()
+                self.ide_emit(oXML=oXML, timezone=timezone)
+                self.nlin += 1
             self.adicionais(oXML=oXML, tamanho_diminuir=tamanho_ocupado)
 
             # Gera o restante das páginas do XML
@@ -373,23 +389,23 @@ class danfe(object):
             )
 
         cEnd = (
-            tagtext(oNode=elem_emit, cTag="xLgr")
-            + ", "
-            + tagtext(oNode=elem_emit, cTag="nro")
-            + " - "
+                tagtext(oNode=elem_emit, cTag="xLgr")
+                + ", "
+                + tagtext(oNode=elem_emit, cTag="nro")
+                + " - "
         )
         cEnd += tagtext(oNode=elem_emit, cTag="xCpl") + " - "
         cEnd += (
-            tagtext(oNode=elem_emit, cTag="xBairro")
-            + "<br />"
-            + tagtext(oNode=elem_emit, cTag="xMun")
-            + " - "
+                tagtext(oNode=elem_emit, cTag="xBairro")
+                + "<br />"
+                + tagtext(oNode=elem_emit, cTag="xMun")
+                + " - "
         )
         cEnd += "Fone: " + tagtext(oNode=elem_emit, cTag="fone") + "<br />"
         cEnd += (
-            tagtext(oNode=elem_emit, cTag="UF")
-            + " - "
-            + tagtext(oNode=elem_emit, cTag="CEP")
+                tagtext(oNode=elem_emit, cTag="UF")
+                + " - "
+                + tagtext(oNode=elem_emit, cTag="CEP")
         )
 
         regime = tagtext(oNode=elem_emit, cTag="CRT")
@@ -567,88 +583,93 @@ class danfe(object):
         return 24
 
     def faturas(self, oXML=None, timezone=None):
+        qtd_itens = ((sum(1 for e in iter(oXML))) - 1)
+        qtd_loop = (qtd_itens) / 12
+        qtd_loop_aux = int(qtd_loop)
+        qtd_loop = (qtd_loop_aux + 1 if qtd_loop > qtd_loop_aux else qtd_loop_aux)
+        qtd_resto = qtd_itens
+        qtdInicial = 1
+        for i in range(qtd_loop):
+            nMr = self.width - self.nRight
 
-        nMr = self.width - self.nRight
+            self.canvas.setFont("NimbusSanL-Bold", 7)
+            if i == 0:
+                self.string(self.nLeft + 1, self.nlin + 1, "FATURA")
 
-        self.canvas.setFont("NimbusSanL-Bold", 7)
-        self.string(self.nLeft + 1, self.nlin + 1, "FATURA")
-        self.rect(self.nLeft, self.nlin + 2, self.width - self.nLeft - self.nRight, 13)
-        self.vline(nMr - 47.5, self.nlin + 2, 13)
-        self.vline(nMr - 95, self.nlin + 2, 13)
-        self.vline(nMr - 142.5, self.nlin + 2, 13)
-        self.hline(nMr - 47.5, self.nlin + 8.5, self.width - self.nLeft)
-        # Labels
-        self.canvas.setFont("NimbusSanL-Regu", 5)
-        self.string(nMr - 46.5, self.nlin + 3.8, "CÓDIGO VENDEDOR")
-        self.string(nMr - 46.5, self.nlin + 10.2, "NOME VENDEDOR")
-        self.string(
-            nMr - 93.5, self.nlin + 3.8, "FATURA          VENCIMENTO           VALOR"
-        )
-        self.string(
-            nMr - 140.5, self.nlin + 3.8, "FATURA          VENCIMENTO           VALOR"
-        )
-        self.string(
-            self.nLeft + 2,
-            self.nlin + 3.8,
-            "FATURA         VENCIMENTO            VALOR",
-        )
+            self.rect(self.nLeft, self.nlin + 2, self.width - self.nLeft - self.nRight, 13)
+            self.vline(nMr - 47.5, self.nlin + 2, 13)
+            self.vline(nMr - 95, self.nlin + 2, 13)
+            self.vline(nMr - 142.5, self.nlin + 2, 13)
+            # Labels
+            self.canvas.setFont("NimbusSanL-Regu", 5)
 
-        # Conteúdo campos
-        self.canvas.setFont("NimbusSanL-Bold", 6)
-        nLin = 7
-        nPar = 1
-        nCol = 0
-        nAju = 0
-
-        line_iter = iter(oXML[1:121])  # Salta elemt 1 e considera os próximos 9
-        for oXML_dup in line_iter:
-
-            cDt, cHr = getdateByTimezone(
-                tagtext(oNode=oXML_dup, cTag="dVenc"), timezone
+            self.string(
+                nMr - 94.0, self.nlin + 3.8, "FATURA                  VENCIMENTO                     VALOR"
             )
             self.string(
-                self.nLeft + nCol + 1,
-                self.nlin + nLin,
-                tagtext(oNode=oXML_dup, cTag="nDup"),
-            )
-            self.string(self.nLeft + nCol + 17, self.nlin + nLin, cDt)
-            self.stringRight(
-                self.nLeft + nCol + 47,
-                self.nlin + nLin,
-                format_number(tagtext(oNode=oXML_dup, cTag="vDup")),
-            )
-
-            if nPar == 3:
-                nLin = 7
-                nPar = 1
-                nCol += 47
-                nAju += 1
-                nCol += nAju * (0.3)
-            else:
-                nLin += 3.3
-                nPar += 1
-
-        # Campos adicionais XML - Condicionados a existencia de financeiro
-        elem_infAdic = oXML.getparent().find(
-            ".//{http://www.portalfiscal.inf.br/nfe}infAdic"
-        )
-        if elem_infAdic is not None:
-            codvend = elem_infAdic.find(
-                ".//{http://www.portalfiscal.inf.br/nfe}obsCont\
-[@xCampo='CodVendedor']"
+                nMr - 141.5, self.nlin + 3.8, "FATURA                  VENCIMENTO                     VALOR"
             )
             self.string(
-                nMr - 46.5, self.nlin + 7.7, tagtext(oNode=codvend, cTag="xTexto")
+                nMr - 189.0, self.nlin + 3.8, "FATURA                   VENCIMENTO                     VALOR"
             )
-            vend = elem_infAdic.find(
-                ".//{http://www.portalfiscal.inf.br/nfe}\
-obsCont[@xCampo='NomeVendedor']"
-            )
-            self.string(
-                nMr - 46.5, self.nlin + 14.3, tagtext(oNode=vend, cTag="xTexto")[:36]
-            )
+            self.string(nMr - 46.5, self.nlin + 3.8, "FATURA                VENCIMENTO                     VALOR", )
 
-        self.nlin += 16  # Nr linhas ocupadas pelo bloco
+            # Conteúdo campos
+            self.canvas.setFont("NimbusSanL-Bold", 6)
+            nLin = 7
+            nPar = 1
+            nCol = 0
+            nAju = 0
+
+            line_iter = iter(oXML[qtdInicial:(qtdInicial + 12)])  # Salta elemt 1 e considera os próximos 9
+            for oXML_dup in line_iter:
+                cDt, cHr = getdateByTimezone(
+                    tagtext(oNode=oXML_dup, cTag="dVenc"), timezone
+                )
+                self.string(
+                    self.nLeft + nCol + 1,
+                    self.nlin + nLin,
+                    tagtext(oNode=oXML_dup, cTag="nDup"),
+                )
+                self.string(self.nLeft + nCol + 17, self.nlin + nLin, cDt)
+                self.stringRight(
+                    self.nLeft + nCol + 47,
+                    self.nlin + nLin,
+                    format_number(tagtext(oNode=oXML_dup, cTag="vDup")),
+                )
+
+                if nPar == 3:
+                    nLin = 7
+                    nPar = 1
+                    nCol += 47
+                    nAju += 1
+                    nCol += nAju * (0.3)
+                else:
+                    nLin += 3.3
+                    nPar += 1
+
+            qtd_resto -= 12
+            qtdInicial += 12
+            # Campos adicionais XML - Condicionados a existencia de financeiro
+            elem_infAdic = oXML.getparent().find(
+                ".//{http://www.portalfiscal.inf.br/nfe}infAdic"
+            )
+            if elem_infAdic is not None:
+                codvend = elem_infAdic.find(
+                    ".//{http://www.portalfiscal.inf.br/nfe}obsCont[@xCampo='CodVendedor']"
+                )
+                self.string(
+                    nMr - 46.5, self.nlin + 7.7, tagtext(oNode=codvend, cTag="xTexto")
+                )
+                vend = elem_infAdic.find(
+                    ".//{http://www.portalfiscal.inf.br/nfe}obsCont[@xCampo='NomeVendedor']"
+                )
+                self.string(
+                    nMr - 46.5, self.nlin + 14.3, tagtext(oNode=vend, cTag="xTexto")[:36]
+                )
+
+            self.nlin += 16  # Nr linhas ocupadas pelo bloco
+        return qtd_loop
 
     def impostos(self, oXML=None):
         # Impostos
@@ -852,14 +873,14 @@ obsCont[@xCampo='NomeVendedor']"
         self.nlin += 23
 
     def produtos(
-        self,
-        oXML=None,
-        el_det=None,
-        index=0,
-        max_index=0,
-        list_desc=None,
-        list_cod_prod=None,
-        nHeight=29,
+            self,
+            oXML=None,
+            el_det=None,
+            index=0,
+            max_index=0,
+            list_desc=None,
+            list_cod_prod=None,
+            nHeight=29,
     ):
 
         nMr = self.width - self.nRight
@@ -929,8 +950,8 @@ obsCont[@xCampo='NomeVendedor']"
             el_imp_ICMS = el_imp.find(".//{http://www.portalfiscal.inf.br/nfe}ICMS")
             el_imp_IPI = el_imp.find(".//{http://www.portalfiscal.inf.br/nfe}IPI")
             cCST = tagtext(oNode=el_imp_ICMS, cTag="orig") + (
-                tagtext(oNode=el_imp_ICMS, cTag="CST")
-                or tagtext(oNode=el_imp_ICMS, cTag="CSOSN")
+                    tagtext(oNode=el_imp_ICMS, cTag="CST")
+                    or tagtext(oNode=el_imp_ICMS, cTag="CSOSN")
             )
             vBC = tagtext(oNode=el_imp_ICMS, cTag="vBC")
             vICMS = tagtext(oNode=el_imp_ICMS, cTag="vICMS")
@@ -1098,17 +1119,17 @@ obsCont[@xCampo='NomeVendedor']"
 
         cEnd = tagtext(oNode=el_dest, cTag="xNome") + " - "
         cEnd += (
-            tagtext(oNode=el_dest, cTag="xLgr")
-            + ", "
-            + tagtext(oNode=el_dest, cTag="nro")
-            + ", "
+                tagtext(oNode=el_dest, cTag="xLgr")
+                + ", "
+                + tagtext(oNode=el_dest, cTag="nro")
+                + ", "
         )
         cEnd += tagtext(oNode=el_dest, cTag="xCpl") + " "
         cEnd += (
-            tagtext(oNode=el_dest, cTag="xBairro")
-            + ", "
-            + tagtext(oNode=el_dest, cTag="xMun")
-            + " - "
+                tagtext(oNode=el_dest, cTag="xBairro")
+                + ", "
+                + tagtext(oNode=el_dest, cTag="xMun")
+                + " - "
         )
         cEnd += tagtext(oNode=el_dest, cTag="UF")
 
@@ -1249,7 +1270,7 @@ obsCont[@xCampo='NomeVendedor']"
 
     def _paragraph(self, text, font, font_size, x, y):
         ptext = "<font size=%s>%s</font>" % (font_size, text)
-        style = ParagraphStyle(name="Normal", fontName=font, fontSize=font_size,)
+        style = ParagraphStyle(name="Normal", fontName=font, fontSize=font_size, )
         paragraph = Paragraph(ptext, style=style)
         w, h = paragraph.wrapOn(self.canvas, x, y)
         return w, h, paragraph
