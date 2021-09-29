@@ -1049,6 +1049,15 @@ class danfe(object):
     def adicionais(self, oXML=None, tamanho_diminuir=0):
         el_infAdic = oXML.find(".//{http://www.portalfiscal.inf.br/nfe}infAdic")
 
+        fisco = tagtext(oNode=el_infAdic, cTag="infAdFisco")
+        observacoes = tagtext(oNode=el_infAdic, cTag="infCpl")
+        if fisco:
+            observacoes = fisco + " " + observacoes
+
+        tamanho_rect = 40
+        if len(observacoes) >= 1700:
+            tamanho_rect = 80
+
         self.nlin += 2
         self.canvas.setFont("NimbusSanL-Bold", 6)
         self.string(self.nLeft + 1, self.nlin + 1, "DADOS ADICIONAIS")
@@ -1059,19 +1068,16 @@ class danfe(object):
             self.nLeft,
             self.nlin + 2,
             self.width - self.nLeft - self.nRight,
-            42 - tamanho_diminuir,
+            tamanho_rect - tamanho_diminuir,
         )
-        self.vline((self.width / 3) * 2, self.nlin + 2, 42 - tamanho_diminuir)
+        self.vline((self.width / 3) * 2, self.nlin + 2, tamanho_rect - tamanho_diminuir)
         # Conteúdo campos
         styles = getSampleStyleSheet()
         styleN = styles["Normal"]
         styleN.fontSize = 6
         styleN.fontName = "NimbusSanL-Regu"
         styleN.leading = 7
-        fisco = tagtext(oNode=el_infAdic, cTag="infAdFisco")
-        observacoes = tagtext(oNode=el_infAdic, cTag="infCpl")
-        if fisco:
-            observacoes = fisco + " " + observacoes
+
         P = Paragraph(observacoes, styles["Normal"])
         w, h = P.wrap(128 * mm, 32 * mm)
         altura = (self.height - self.nlin - 5) * mm
