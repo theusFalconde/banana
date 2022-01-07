@@ -192,9 +192,6 @@ class danfe(object):
                 if nId > 25:
                     self.NrPages += math.ceil((nId - 25) / 70)
 
-            if recibo:
-                self.recibo_entrega(oXML=oXML, timezone=timezone)
-
             self.ide_emit(oXML=oXML, timezone=timezone)
             self.destinatario(oXML=oXML, timezone=timezone)
             tamanho_ocupado += self.entrega_retirada(
@@ -250,11 +247,20 @@ class danfe(object):
                     list_cod_prod=list_cod_prod,
                 )
 
+            if recibo:
+                if qtd_blocos >= 9:
+                    self.nlin += 51
+                else:
+                    self.nlin += 11
+                self.recibo_entrega(oXML=oXML, timezone=timezone)
+
             self.newpage()
+
         if cce_xml:
             for xml in cce_xml:
                 self._generate_cce(cce_xml=xml, oXML=oXML, timezone=timezone)
                 self.newpage()
+
         self.canvas.save()
 
     def ide_emit(self, oXML=None, timezone=None):
@@ -1161,8 +1167,6 @@ class danfe(object):
             self.canvas, (self.nLeft + 1) * mm, ((self.height - self.nlin) * mm) - h
         )
 
-        self.nlin += 20
-        self.hline(self.nLeft, self.nlin, self.width - self.nRight)
         self.nlin += 2
 
     def newpage(self):
